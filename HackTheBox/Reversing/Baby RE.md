@@ -11,7 +11,9 @@ First, download the file on linux or whatever you want
 Then, to execute it, use sudo **chmod +x baby**, now you can execute it by using **sudo ./baby**
 You'll see it asks you for a key so input something 
 
-![image](https://user-images.githubusercontent.com/26023804/110243530-12420480-7f5b-11eb-8409-f89b125cc96d.png)
+<p align="center">
+  <img width="460" height="300" src="https://user-images.githubusercontent.com/26023804/110243530-12420480-7f5b-11eb-8409-f89b125cc96d.png">
+</p>
 
 The first thing you should try in that case is using **strings baby** to dump all the strings from the binary file, if you scroll, you'll see the password appearing
 
