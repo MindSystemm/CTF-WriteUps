@@ -1,6 +1,6 @@
 Name : Baby RE\
 Difficulty : 1/10\
-Link : https://app.hackthebox.eu/challenges/92\
+Link : https://app.hackthebox.eu/challenges/92 \
 Description : *Show us your basic skills! (P.S. There are 4 ways to solve this, are you willing to try them all?)*\
 
 **Solution** : 
