@@ -2,6 +2,7 @@ Name : Baby RE\
 Difficulty : 1/10\
 Link : https://app.hackthebox.eu/challenges/179 \
 Description : *Who needs session integrity these days?* \
+
 **Hint**:
 Maybe you could simulate admin by modifying cookies?
 
