@@ -1,30 +1,38 @@
 Name : Baby RE\
 Difficulty : 1/10\
-Link : https://app.hackthebox.eu/challenges/92 \
-Description : *Show us your basic skills! (P.S. There are 4 ways to solve this, are you willing to try them all?)*\
+Link : https://app.hackthebox.eu/challenges/179 \
+Description : *Who needs session integrity these days?* \
+
+**Hint**:
+Maybe you could simulate admin by modifying cookies?
 
 **Solution** : 
 
-This is maybe the easiest reversing challenge you can solve. 
-
-First, download the file on linux or whatever you want
-Then, to execute it, use sudo **chmod +x baby**, now you can execute it by using **sudo ./baby**
-You'll see it asks you for a key so input something 
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/26023804/110695678-74fcff80-81ea-11eb-8de6-f9c46300fc6b.png">
+</p>
+So we're given a website with 2 options : Register & Login. 
+First step would be to check the source code but nothing interesting in it...
+So I tried to register as admin and I got as answer that this username was already in use so nice, we know that there's an admin user :tada:
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/26023804/110243530-12420480-7f5b-11eb-8409-f89b125cc96d.png">
+  <img src="https://user-images.githubusercontent.com/26023804/110695564-57c83100-81ea-11eb-9ea5-32a08e1553fa.png">
 </p>
 
-The first thing you should try in that case is using **strings baby** to dump all the strings from the binary file, if you scroll, you'll see the password appearing
+So let's register with a easy-to-remember username password combination (123:123). Login and you'll see that there's a cookie which was created \
+
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/26023804/110243574-47e6ed80-7f5b-11eb-8ec1-fced0c450753.png">
+  <img src="https://user-images.githubusercontent.com/26023804/110695903-b68daa80-81ea-11eb-9451-af3a62d61fda.png">
 </p>
 
-Just restart the binary and input this strings as password and you'll get the flag.
+Let's make some magic and try to decode it as base64 \
 
-But as the owner doesn't want to use that way, we can also decompile the file using Ghidra, IDA, ... Once again, it's obvious
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/26023804/110243733-eb380280-7f5b-11eb-880b-eb5268f5ae57.png">
+  <img src="https://user-images.githubusercontent.com/26023804/110696003-d329e280-81ea-11eb-93ab-d065b91c8412.png">
 </p>
+
+The last step is to now convert **{"username":"admin"}** to base 64 and modify the cookie using developpers tools of whatever your want.
+Then login and you'll see the flag. 
+
