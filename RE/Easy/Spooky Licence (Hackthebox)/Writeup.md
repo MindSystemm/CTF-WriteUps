@@ -2,7 +2,7 @@ This challenge was proposed during cyberapocalypse 2023 and was an easy reversin
 
 First, let's fire up the challenge in Ghidra to see what we'll deal with : 
 
-![Ghidra](/Images/Ghidra.png)
+![Ghidra](./Images/Ghidra.png)
 
 We can first see that the input should be 32 characters long and than then a lots of checks are made on the input.
 This is a perfect challenge for angr (or Z3)
