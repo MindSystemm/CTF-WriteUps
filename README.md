@@ -5,7 +5,7 @@ The repository provides a collection of pwn/RE challenges I solved during CTF co
 |--------------|-------------------|-------------------|
 | Very Easy    | strings           | [Baby RE](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Very%20Easy/Baby%20RE.md)  |
 | Easy         | .net              | [Bypass](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Bypass.md)  |
-| Medium       | Angr              | [Test1](lien_vers_le_challenge)  |
+| Easy         | Angr              | [Spooky Licence](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Spooky%20Licence%20(Hackthebox)/Writeup.md)  |
 | Medium       | Z3                | [Test2](lien_vers_le_challenge)  |
 | Hard         | Android (native)  | [2FA](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Hard/2FA_solve.py)  |
 
