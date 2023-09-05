@@ -1,3 +1,6 @@
+#The challenge setup and another solution can be found here https://github.com/cscbe/CSCBE-2023-WRITE-UPS/tree/main/Mobile/2FA/2FA
+
+
 from dexparser import DEXParser
 import json
 import requests
