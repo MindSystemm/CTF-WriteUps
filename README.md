@@ -6,6 +6,7 @@ The repository provides a collection of pwn/RE challenges I solved during CTF co
 | Difficulty   | Type of challenges | Link  |
 |--------------|-------------------|-------------------|
 | Very Easy    | strings           | [Baby RE (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Very%20Easy/Baby%20RE%20(Hackthebox)/Baby%20RE.md)  |
+| Very Easy    | Java              | [Coffee Shop (PCTF23)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/Challenges/PatriotCTF23/Writeups.md#coffee-shop)  |
 | Easy         | .net              | [Bypass (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Bypass%20(Hackthebox)/Bypass.md)  |
 | Easy         | Angr              | [Spooky Licence (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Spooky%20Licence%20(Hackthebox)/Writeup.md)  |
 | Hard         | Android (native)  | [2FA (CSCBE2023)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Hard/2FA%20(CSCBE23)/2FA_solve.py)  |
