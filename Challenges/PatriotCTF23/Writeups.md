@@ -6,7 +6,7 @@ All original files can be found here : https://github.com/MasonCompetitiveCyber/
 
 When dealing with pwn challenges, a good start is to check the security of the binary. We can do this by using the `checksec` command in gdb. But here, the challenge is marked as beginner so I directly looked at the source code (Variables has been renamed for simplicity)
 
-![Source code](/Images/guessinggame.png)
+![Source code](./Images/guessinggame.png)
 
 We see that if printFlag is different from 0, the flag will be printed. However it's set to 0. Luckily for us, the program has a buffer overflow vulnerability (the length of the input is not checked). We can exploit this by overflowing the buffer and overwriting the value of printFlag to 1.
 To do so, I generated a long string using python and piped it to the program.
@@ -179,7 +179,7 @@ for char in alphabet:
 
 We're given an elf file. Looking at the description, we're probably going to patch the binary. I opened it in ghidra and luckily, my ghidra is configured to show unreachable code. You can do it like this : 
 
-![Patchwork](./Images/Patchwork.png)
+![Patchwork](./Images/PatchWork.png)
 
 Then, we see this appearing in the main function :
 
