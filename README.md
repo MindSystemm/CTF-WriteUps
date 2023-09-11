@@ -14,5 +14,5 @@ The repository provides a collection of pwn/RE challenges I solved during CTF co
 
 | Difficulty   | Type of challenges | Link  |
 |--------------|-------------------|-------------------|
+| Easy         | Format String     | [Printshop (PCTF23)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/Challenges/PatriotCTF23/Writeups.md#printshop) |
 | Medium       | variable overflow           | [Tombouctou (CSCBE2021)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/PWN/Medium/Tombouctou/Writeup.md)  |
-| Easy         | Format String     | [Printshop (PCTF23)]

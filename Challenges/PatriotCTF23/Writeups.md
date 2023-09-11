@@ -143,7 +143,7 @@ By decoding this based64 strings, we find the flag !
 
 Simply open the file in Jadx and decrypt the 3 base64 strings 
 
-[Code](/Images/CoffeeShop.png)
+[Code](./Images/CoffeeShop.png)
 
 ## Python XOR
 
