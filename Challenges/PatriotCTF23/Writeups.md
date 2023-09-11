@@ -6,7 +6,7 @@ All original files can be found here : https://github.com/MasonCompetitiveCyber/
 
 When dealing with pwn challenges, a good start is to check the security of the binary. We can do this by using the `checksec` command in gdb. But here, the challenge is marked as beginner so I directly looked at the source code (Variables has been renamed for simplicity)
 
-[Source code](./Images/guessinggame.png)
+![Source code](/Images/guessinggame.png)
 
 We see that if printFlag is different from 0, the flag will be printed. However it's set to 0. Luckily for us, the program has a buffer overflow vulnerability (the length of the input is not checked). We can exploit this by overflowing the buffer and overwriting the value of printFlag to 1.
 To do so, I generated a long string using python and piped it to the program.
@@ -21,11 +21,11 @@ This gives the flag !
 
 We're once again given an ELF file. The source code is the following : 
 
-[Source Code](./Images/printshop.png)
+![Source Code](./Images/printshop.png)
 
 The vulnerability here lies in the fact the the format of the input is not checked, meaning that we can print out value from the stack : 
 
-[Vulnerability](./Images/printshop2.png)
+![Vulnerability](./Images/printshop2.png)
 
 Next, we can use the magic of pwntools and use the function fmtstr_payload. We know that the next function to be executed is exit so we can overwrite its GOT address with this of the win function :
 
@@ -57,7 +57,7 @@ We're once again given a picture. Let's do the same as for the previous challeng
 
 This challenges gives us a word document. When opening it, we are prompted with a message telling us that macros have been disabled for safety issue. Word documents are in fact archives. These can be opened with winrar. In the word folder, I found a file called vbaProject.bin. This could contain the macro. I justed opened it with an hex editor and found this :
 
-[Macro](./Images/Conratulations.png)
+![Macro](./Images/Conratulations.png)
 
 By decoding these hex value, we find the flag
 
@@ -65,13 +65,13 @@ By decoding these hex value, we find the flag
 
 We receive once again a corrupted image. Once again, let's use aperisolve. Binwalk find a picture. When I opened the picture, I found that the size was too big for such a bad quality image. When we scrolled to the bottom, We see that the pattern CORRUPTED is repeated. I noticed that the first CORRUPTED was begun with "PK" which is the header of a zip file ! I so removed the the beginning of the file (everything until PK), then used find and replace option of cyberchef. This gives the zip file we expected ! In it, we find an image. As usual, I used aperisolve and the flag was in a layer of the image.
 
-[Receipe](./Images/Corrupted2.png)
+![Receipe](./Images/Corrupted2.png)
 
 ## Evil Monkey 1
 
 We're given a blend file. This is a file used by blender. I opened it with blender and was prompted with a message telling me that automatique execution of python script was blocked. I so looked at the script and found this python code : 
 
-[Script](./Images/Monkey1.png)
+![Script](./Images/Monkey1.png)
 
 To find the key, I run strings command on the file and scrolled down. I found the key : Th3_Ev1l_M0nkey!
 
@@ -115,7 +115,7 @@ print(z)
 ```
 Having the position of the player, I used matlab to print the flag : 
 
-[Plot](./Images/EULA.png)
+![Plot](./Images/EULA.png)
 
 ## Evil Monkey 2
 
@@ -133,7 +133,7 @@ Looking at the behavior tab, we see the follwing text :
 
 According to the description, we are looking for a deleted file. By looking at the commit on github, we notice some file has been deleted.  We can anyway access the deleted picture : 
 
-[Picture](./Images/Documentation.png)
+![Picture](./Images/Documentation.png)
 
 By decoding this based64 strings, we find the flag ! 
 
@@ -143,7 +143,7 @@ By decoding this based64 strings, we find the flag !
 
 Simply open the file in Jadx and decrypt the 3 base64 strings 
 
-[Code](./Images/CoffeeShop.png)
+![Code](./Images/CoffeeShop.png)
 
 ## Python XOR
 
@@ -179,7 +179,7 @@ for char in alphabet:
 
 We're given an elf file. Looking at the description, we're probably going to patch the binary. I opened it in ghidra and luckily, my ghidra is configured to show unreachable code. You can do it like this : 
 
-[Patchwork](./Images/Patchwork.png)
+![Patchwork](./Images/Patchwork.png)
 
 Then, we see this appearing in the main function :
 
@@ -206,12 +206,12 @@ We can see that the function give_flag is never called. We can patch the binary 
 
 We're given an elf file. By looking at the source code, we see some operation are done to the intput and then a check with the encrypted flag is done. The operation uses modulo so it's pretty complicated to reverse. The approach I used is to patch the binary so that it doesn't exit directly on the complex function (I nopped the print and the exit). I then runned the binary on gdb and break on the check to see how my input was transformed. 
 
-[GDB](./Images/Suboptimal.png)
+![GDB](./Images/Suboptimal.png)
 
 I inputted 23 "a" (as the input should be 23 char long). As you can see, these "a" became "i". These "i" are going to be compared with the flag xk|nF{quxzwkgzgwx|quitH. I assumed that, as the operation was linear, substracting the encrypted flag from my input would give me the difference I should add to each "a" character. I didn't scripted it but it took me 10 minutes to do it for each character. 
 For example, here's what I did to find the first chars :
 
-[Char](./Images/suboptimal2.png)
+![Char](./Images/suboptimal2.png)
 
 ## Python Garbage Compiler
 
