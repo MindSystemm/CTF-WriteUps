@@ -263,6 +263,177 @@ original_input = reverse_entry(reverse_stage1(reverse_stage2(reverse_finalstage(
 print(original_input)  
 ```
 
+## Reduced Reduced Instruction set
+
+I did not solve this challenge during the ctf (probably lazyness) but after having seen the solution from another team (https://cr3.mov/posts/patriot23-rev-reduced-reduced-instruction-set-1and2/), I decided to solve it my way using python (would be probably simplier to read for beginner with VM)
+
+So the first thing to do is to create a VM structure : 
+
+```python
+class VM:
+    def __init__(self):
+        self.registers = [0] * 16  # 16 registers
+        self.tape = bytearray()
+        self.cmp = 0
+```
+
+Then, by looking at the decompiled code in Ghidra, we can try to fit each case with a known instruction. It's as "simple" as that. Here's the code I wrote : 
+
+```python
+def decode_instruction(fd):
+    instruction = fd.read(4)  # Read 4 bytes for an instruction
+    if not instruction:
+        return None  # End of file
+    return struct.unpack("<BBBB", instruction)
+
+def execute_instruction(curr_ins, curr_vm):
+    op = curr_ins[0]
+    dest_reg = curr_ins[1]
+    src_reg = curr_ins[2]
+    immediate = curr_ins[3]
+
+    if op == 0:  # mov
+        #*(uint *)puVar2 = *(uint *)puVar3;
+        print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
+        curr_vm.registers[dest_reg] = curr_vm.registers[src_reg]
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 1:  # add
+        #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3] + *(uint *)puVar3;
+        print(f"add r{src_reg} to r{dest_reg} with immediate {immediate}")
+        print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] += curr_vm.registers[src_reg] + immediate
+    elif op == 2:  # sub
+        print(f"sub r{src_reg} from r{dest_reg} with immediate {immediate}")
+        curr_vm.registers[dest_reg] -= curr_vm.registers[src_reg] + immediate
+    elif op == 3:  # prnt reg
+        #printf("%u\n",(ulong)*(uint *)puVar2);
+        print(f"prnt r{dest_reg}")
+        print(curr_vm.registers[dest_reg])
+    elif op == 4:  # movi
+        #*(uint *)puVar2 = (uint)(byte)param_2[3];
+        print(f"movi immediate {immediate} to r{dest_reg}")
+        curr_vm.registers[dest_reg] = immediate
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 5:  # push
+        #    *(long *)(param_3 + 0x18) = *(long *)(param_3 + 0x18) + 8;
+        #**(undefined8 **)(param_3 + 0x18) = *puVar3;
+        print(f"push r{src_reg} to tape")
+        curr_vm.tape.extend(struct.pack("<Q", curr_vm.registers[src_reg]))
+    elif op == 6:  # pop
+        #    *puVar2 = **(undefined8 **)(param_3 + 0x18);
+        #*(long *)(param_3 + 0x18) = *(long *)(param_3 + 0x18) + -8;
+        print(f"pop from tape to r{dest_reg}")
+        try:
+            curr_vm.registers[dest_reg] = struct.unpack("<Q", curr_vm.tape[-8:])[0]
+            curr_vm.tape = curr_vm.tape[:-8]
+        except:
+            print("Error popping from tape!")
+    elif op == 7:  # cmp
+        #*(uint *)(param_3 + 0x10) = *(uint *)puVar2 - *(uint *)puVar3;
+        print(f"cmp r{dest_reg} and r{src_reg}")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        print(int.to_bytes(curr_vm.registers[dest_reg], 4, "big"))
+        print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
+        curr_vm.cmp = curr_vm.registers[dest_reg] - curr_vm.registers[src_reg]
+    elif op == 8:  # jz
+        #    if (*(int *)(param_3 + 0x10) == 0) {
+        #lseek(param_1,(long)(short)((ushort)(byte)param_2[3] + (ushort)(byte)param_2[2] * 0x100),1);
+        print(f"jz to offset {immediate} if cmp is zero")
+        if curr_vm.cmp == 0:
+            offset = (src_reg << 8) + immediate
+            # Assuming `fd` is a global variable
+            file.seek(offset, 1)  # SEEK_CUR
+    elif op == 9:  # write
+        #write(1,*(void **)(param_3 + 0x18),(ulong)(byte)param_2[3]);
+        print(f"write {immediate} bytes from tape")
+        try:
+            sys.stdout.write("Writing : " + curr_vm.tape[:immediate].decode("utf-8") + "\n")
+        except:
+            print("Error writing to stdout!")
+        curr_vm.tape = curr_vm.tape[immediate:]
+    elif op == 0xa:  # mul
+        #    *(uint *)puVar2 = *(uint *)puVar2 * *(uint *)puVar3;
+        #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3];
+        print(f"mul r{dest_reg} by r{src_reg} with immediate {immediate}")
+        curr_vm.registers[dest_reg] = (curr_vm.registers[dest_reg] * curr_vm.registers[src_reg]) + immediate
+    elif op == 0xb:  # addi
+        #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3];
+        print(f"add immediate {immediate} to r{dest_reg}")
+        curr_vm.registers[dest_reg] += immediate
+    elif op == 0xc:  # exit
+        print("exit")
+    elif op == 0xd:  # getnum
+        #__isoc99_scanf(&DAT_00102008,puVar2);
+        print(f"getnum and store in r{dest_reg}")
+        password = input()
+        decimal_values = [ord(char) for char in password]
+        decimal_number = int(''.join(map(str, decimal_values)))
+        curr_vm.registers[dest_reg] = decimal_number
+    elif op == 0xe:  # XOR
+        #*(uint *)puVar2 = *(uint *)puVar2 ^ *(uint *)puVar3;
+        print(f"xor r{src_reg} and r{dest_reg}")
+        print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
+        print(f"Value in r{destsreg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] ^= curr_vm.registers[src_reg]
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 0xf:  # SHR (Shift Right)
+        #*(uint *)puVar2 = *(uint *)puVar2 >> (param_2[3] & 0x1f);
+        print(f"shr r{dest_reg} by {immediate & 0x1F} bits")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] >>= (immediate & 0x1F)
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 0x10:  # Read from stdin
+        #    uVar1 = getc(stdin);
+        #*(uint *)puVar2 = uVar1;
+        print(f"read from stdin and store in r{dest_reg}")
+        password = input()
+        decimal_values = [ord(char) for char in password]
+        decimal_number = int(''.join(map(str, decimal_values)))
+        curr_vm.registers[dest_reg] = decimal_number
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 0x11:  # SHL (Shift Left)
+        #*(uint *)puVar2 = *(uint *)puVar2 << (param_2[3] & 0x1f);
+        print(f"shl r{dest_reg} by {immediate & 0x1F} bits")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] <<= (immediate & 0x1F)
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 0x12:  # SUBI (Subtract Immediate)
+        #*(uint *)puVar2 = *(uint *)puVar2 - (uint)(byte)param_2[3];
+        print(f"subi {immediate} from r{dest_reg}")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] -= (immediate & 0xFF)
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    elif op == 0x13:  # MOD (Modulus)
+        #*(uint *)puVar2 = *(uint *)puVar2 % *(uint *)puVar3;
+        print(f"mod r{src_reg} by r{dest_reg}")
+        print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.registers[dest_reg] %= curr_vm.registers[src_reg]
+        print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+    else:
+        print("Error executing instruction!")
+
+# Example usage
+if __name__ == "__main__":
+    vm = VM()
+    with open("password_checker.smol", "rb") as file:
+        while True:
+            curr_ins = decode_instruction(file)
+            if curr_ins is None:
+                break  # End of file
+            execute_instruction(curr_ins, vm)
+```
+
+It has a lots of details but I think it helps a lot. One optimization would be to puts debug level to hide/show more information. Anyway, As the challenge asks use for some inputs, they are probably compared somewhere so let's just control+F to find this cmp instruction : 
+
+![Output](./Images/Reduced.png)
+
+By keeping doing this, we'll get all parts of the flag ! 
+
+
+
+
 # Misc
 
 ## Uh-Oh
