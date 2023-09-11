@@ -21,7 +21,7 @@ This gives the flag !
 
 We're once again given an ELF file. The source code is the following : 
 
-[Source Code](Challenges\PatriotCTF23\Images\printshop.png)
+[Source Code](./Images/printshop.png)
 
 The vulnerability here lies in the fact the the format of the input is not checked, meaning that we can print out value from the stack : 
 
