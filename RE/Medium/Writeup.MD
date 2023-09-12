@@ -1,0 +1,295 @@
+We are Provided with an ELF file. When starting it, it simply asks us for the "Magic Word". 
+Then, I looked at the code in Ghidra, here's the main function:
+```c
+  printf("Say the magic word: ");
+  fgets((char *)&input,50,stdin);
+  last_char = strcspn((char *)&input,"\n");
+  *(undefined *)((long)&input + last_char) = 0;
+  install_filter();
+  for (i = 0; i < 5; i = i + 1) {
+    lVar1 = (long)(int)(i * 5);
+    local_18 = (char *)((long)&input + lVar1);
+    if (*local_18 == '\0') break;
+    syscall(600,(ulong)i,(ulong)(uint)(int)*local_18,
+            (ulong)(uint)(int)*(char *)((long)&input + lVar1 + 1),
+            (ulong)(uint)(int)*(char *)((long)&input + lVar1 + 2),
+            (ulong)(uint)(int)*(char *)((long)&input + lVar1 + 3),
+            (ulong)(uint)(int)*(char *)((long)&input + lVar1 + 4));
+  }
+  puts("Free at last!");
+  return 0;
+```
+
+The first strange thing in this code is the call to the syscall 600. I usually look in this list but this one wasn't referenced : https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
+
+To go deeper, I looked at the install_filter function:
+```c
+undefined8 install_filter(void)
+
+{
+  int iVar1;
+  long i;
+  undefined8 *puVar2;
+  undefined8 *puVar3;
+  undefined2 local_498 [4];
+  undefined8 *local_490;
+  undefined8 local_488 [144];
+  
+  puVar2 = &DAT_00102060;
+  puVar3 = local_488;
+  for (i = 0x90; i != 0; i = i + -1) {
+    *puVar3 = *puVar2;
+    puVar2 = puVar2 + 1;
+    puVar3 = puVar3 + 1;
+  }
+  local_498[0] = 0x90;
+  local_490 = local_488;
+  iVar1 = prctl(0x26,1,0,0,0);
+  if (iVar1 != 0) {
+    perror("prctl(NO_NEW_PRIVS)");
+                    /* WARNING: Subroutine does not return */
+    exit(1);
+  }
+  iVar1 = prctl(0x16,2,local_498);
+  if (iVar1 != 0) {
+    perror("prctl(SECCOMP)");
+                    /* WARNING: Subroutine does not return */
+    exit(2);
+  }
+  return 0;
+}
+```
+
+Once again, nothing which seems to be useful. However, one can notice the reference to SECCOMP. Seccomp (Security Computing Mode) is a Linux kernel feature that allows you to restrict the system calls a process can make, thus enhancing their security.
+To dump the seccomp rules, I used the seccomp-tools package (https://github.com/david942j/seccomp-tools) 
+```bash
+seccomp-tools dump ./breaker 
+```
+
+After having put a random magic word, we can see the following output : 
+
+```bash
+Say the magic word: test
+ line  CODE  JT   JF      K
+=================================
+ 0000: 0x20 0x00 0x00 0x00000004  A = arch
+ 0001: 0x15 0x01 0x00 0xc000003e  if (A == ARCH_X86_64) goto 0003
+ 0002: 0x06 0x00 0x00 0x00000000  return KILL
+ 0003: 0x20 0x00 0x00 0x00000000  A = sys_number
+ 0004: 0x15 0x01 0x00 0x00000258  if (A == 0x258) goto 0006
+ 0005: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0006: 0x20 0x00 0x00 0x00000010  A = args[0]
+ 0007: 0x15 0x00 0x21 0x00000000  if (A != 0x0) goto 0041
+ 0008: 0x00 0x00 0x00 0x00000000  A = 0
+ 0009: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0010: 0x20 0x00 0x00 0x00000018  A = args[1]
+ 0011: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0012: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0013: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0014: 0x15 0x01 0x00 0x00000048  if (A == 72) goto 0016
+ 0015: 0x06 0x00 0x00 0x00000000  return KILL
+ 0016: 0x20 0x00 0x00 0x00000020  A = args[2]
+ 0017: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0018: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0019: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0020: 0x15 0x01 0x00 0x0000000c  if (A == 12) goto 0022
+ 0021: 0x06 0x00 0x00 0x00000000  return KILL
+ 0022: 0x20 0x00 0x00 0x00000028  A = args[3]
+ 0023: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0024: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0025: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0026: 0x15 0x01 0x00 0x00000036  if (A == 54) goto 0028
+ 0027: 0x06 0x00 0x00 0x00000000  return KILL
+ 0028: 0x20 0x00 0x00 0x00000030  A = args[4]
+ 0029: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0030: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0031: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0032: 0x15 0x01 0x00 0x00000045  if (A == 69) goto 0034
+ 0033: 0x06 0x00 0x00 0x00000000  return KILL
+ 0034: 0x20 0x00 0x00 0x00000038  A = args[5]
+ 0035: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0036: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0037: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0038: 0x15 0x01 0x00 0x0000002e  if (A == 46) goto 0040
+ 0039: 0x06 0x00 0x00 0x00000000  return KILL
+ 0040: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0041: 0x15 0x00 0x21 0x00000001  if (A != 0x1) goto 0075
+ 0042: 0x00 0x00 0x00 0x00000000  A = 0
+ 0043: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0044: 0x20 0x00 0x00 0x00000018  A = args[1]
+ 0045: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0046: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0047: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0048: 0x15 0x01 0x00 0x00000065  if (A == 101) goto 0050
+ 0049: 0x06 0x00 0x00 0x00000000  return KILL
+ 0050: 0x20 0x00 0x00 0x00000020  A = args[2]
+ 0051: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0052: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0053: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0054: 0x15 0x01 0x00 0xfffffffe  if (A == 4294967294) goto 0056
+ 0055: 0x06 0x00 0x00 0x00000000  return KILL
+ 0056: 0x20 0x00 0x00 0x00000028  A = args[3]
+ 0057: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0058: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0059: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0060: 0x15 0x01 0x00 0x00000065  if (A == 101) goto 0062
+ 0061: 0x06 0x00 0x00 0x00000000  return KILL
+ 0062: 0x20 0x00 0x00 0x00000030  A = args[4]
+ 0063: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0064: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0065: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0066: 0x15 0x01 0x00 0xffffffcb  if (A == 4294967243) goto 0068
+ 0067: 0x06 0x00 0x00 0x00000000  return KILL
+ 0068: 0x20 0x00 0x00 0x00000038  A = args[5]
+ 0069: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0070: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0071: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0072: 0x15 0x01 0x00 0x000000a2  if (A == 162) goto 0074
+ 0073: 0x06 0x00 0x00 0x00000000  return KILL
+ 0074: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0075: 0x15 0x00 0x21 0x00000002  if (A != 0x2) goto 0109
+ 0076: 0x00 0x00 0x00 0x00000000  A = 0
+ 0077: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0078: 0x20 0x00 0x00 0x00000018  A = args[1]
+ 0079: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0080: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0081: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0082: 0x15 0x01 0x00 0x00000070  if (A == 112) goto 0084
+ 0083: 0x06 0x00 0x00 0x00000000  return KILL
+ 0084: 0x20 0x00 0x00 0x00000020  A = args[2]
+ 0085: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0086: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0087: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0088: 0x15 0x01 0x00 0xffffffbd  if (A == 4294967229) goto 0090
+ 0089: 0x06 0x00 0x00 0x00000000  return KILL
+ 0090: 0x20 0x00 0x00 0x00000028  A = args[3]
+ 0091: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0092: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0093: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0094: 0x15 0x01 0x00 0x000000a4  if (A == 164) goto 0096
+ 0095: 0x06 0x00 0x00 0x00000000  return KILL
+ 0096: 0x20 0x00 0x00 0x00000030  A = args[4]
+ 0097: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0098: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0099: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0100: 0x15 0x01 0x00 0xffffffc0  if (A == 4294967232) goto 0102
+ 0101: 0x06 0x00 0x00 0x00000000  return KILL
+ 0102: 0x20 0x00 0x00 0x00000038  A = args[5]
+ 0103: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0104: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0105: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0106: 0x15 0x01 0x00 0x00000074  if (A == 116) goto 0108
+ 0107: 0x06 0x00 0x00 0x00000000  return KILL
+ 0108: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0109: 0x15 0x00 0x21 0x00000003  if (A != 0x3) goto 0143
+ 0110: 0x00 0x00 0x00 0x00000000  A = 0
+ 0111: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0112: 0x20 0x00 0x00 0x00000018  A = args[1]
+ 0113: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0114: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0115: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0116: 0x15 0x01 0x00 0x00000062  if (A == 98) goto 0118
+ 0117: 0x06 0x00 0x00 0x00000000  return KILL
+ 0118: 0x20 0x00 0x00 0x00000020  A = args[2]
+ 0119: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0120: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0121: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0122: 0x15 0x01 0x00 0x00000010  if (A == 16) goto 0124
+ 0123: 0x06 0x00 0x00 0x00000000  return KILL
+ 0124: 0x20 0x00 0x00 0x00000028  A = args[3]
+ 0125: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0126: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0127: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0128: 0x15 0x01 0x00 0x00000024  if (A == 36) goto 0130
+ 0129: 0x06 0x00 0x00 0x00000000  return KILL
+ 0130: 0x20 0x00 0x00 0x00000030  A = args[4]
+ 0131: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0132: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0133: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0134: 0x15 0x01 0x00 0xfffffffd  if (A == 4294967293) goto 0136
+ 0135: 0x06 0x00 0x00 0x00000000  return KILL
+ 0136: 0x20 0x00 0x00 0x00000038  A = args[5]
+ 0137: 0x61 0x00 0x00 0x00000000  X = mem[0]
+ 0138: 0x1c 0x00 0x00 0x00000000  A -= X
+ 0139: 0x02 0x00 0x00 0x00000000  mem[0] = A
+ 0140: 0x15 0x01 0x00 0x00000080  if (A == 128) goto 0142
+ 0141: 0x06 0x00 0x00 0x00000000  return KILL
+ 0142: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0143: 0x06 0x00 0x00 0x00000000  return KILL
+``` 
+
+This is a pretty strange output as seccomp are used to block system calls. Here, this seems a bit like a list of instructions. So, let's try to reconstruct a pseudo code :
+
+```python
+args = input()
+A = args[0] #mem[0] = A
+if A == 72: #if (A == 72) goto 0016
+    A = args[1] #A = args[2]
+    X = mem[0] #X = mem[0]
+    A -= X #A -= X
+    if A == 12:
+        A = args[2]
+        X = mem[0]
+        A -= X
+        #...
+    else
+        exit() #return KILL
+else:
+    exit() #return KILL
+```
+
+So basically, it seems as if our program is checking our input character. by character. To verify this assumption, let's convert to ASCII 72 ans 72+12 : 
+
+```bash
+Python 3.11.0 (main, Oct 24 2022, 18:26:48) [MSC v.1933 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> str(chr(72) + chr(72+12))
+'HT'
+>>>
+```
+
+Nice, we get the beginning of the flag. However, some big values are shown in the seccomp output, as this one for example : 4294967243
+It seems a big like a signed value (a negative one). As these seems like 32 bits values, we can find the negative value like this : 
+
+```python 
+4294967294 - 2**32
+```
+This output -2. Now to extract the value, I used this regex : \d+:\s(?:0x[0-9a-fA-F]+\s){4} (ChatGTP is very good to generate regex) To remove the part before the code and then used this one to extract the ascii value \bif \(A == (\d+)\) goto \d+\b
+
+If output this : 
+
+```python
+[72, 12, 54, 69, 46, 101, 4294967294, 101, 4294967243, 162, 112, 4294967229, 164, 4294967232, 116, 98, 16, 36, 4294967293, 128]
+```
+
+Now, all we have to do is to convert the high value to negative ones and then convert to ASCII : 
+
+```python
+for i in range(len(output)):
+    if output[i] > 500:
+        output[i] -= 2**32
+```
+
+This gives : 
+
+```python
+[72, 12, 54, 69, 46, 101, -2, 101, -53, 162, 112, -67, 164, -64, 116, 98, 16, 36, -3, 128]
+```	
+One last important thing is that the counter is reset each 5 characters ! We have now everything into account to get the flag ! 
+
+```python 
+>>> chr(72)
+'H'
+>>> chr(72+12)
+'T'
+>>> chr(12+54)
+'B'
+>>> chr(54+69)
+'{'
+>>> chr(69+46)
+'s'
+>>> chr(101)
+'e'
+```
+
+I could have scripted it but after trying to fix an error for a few minuts, I decided to do it manually 
