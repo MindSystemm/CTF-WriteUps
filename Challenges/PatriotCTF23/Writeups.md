@@ -297,38 +297,44 @@ def execute_instruction(curr_ins, curr_vm):
         print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
         curr_vm.registers[dest_reg] = curr_vm.registers[src_reg]
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 1:  # add
         #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3] + *(uint *)puVar3;
         print(f"add r{src_reg} to r{dest_reg} with immediate {immediate}")
         print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] += curr_vm.registers[src_reg] + immediate
+        curr_vm.instruction_pointer += 1
     elif op == 2:  # sub
         print(f"sub r{src_reg} from r{dest_reg} with immediate {immediate}")
         curr_vm.registers[dest_reg] -= curr_vm.registers[src_reg] + immediate
+        curr_vm.instruction_pointer += 1
     elif op == 3:  # prnt reg
         #printf("%u\n",(ulong)*(uint *)puVar2);
         print(f"prnt r{dest_reg}")
         print(curr_vm.registers[dest_reg])
+        curr_vm.instruction_pointer += 1
     elif op == 4:  # movi
         #*(uint *)puVar2 = (uint)(byte)param_2[3];
         print(f"movi immediate {immediate} to r{dest_reg}")
         curr_vm.registers[dest_reg] = immediate
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 5:  # push
         #    *(long *)(param_3 + 0x18) = *(long *)(param_3 + 0x18) + 8;
         #**(undefined8 **)(param_3 + 0x18) = *puVar3;
-        print(f"push r{src_reg} to tape")
-        curr_vm.tape.extend(struct.pack("<Q", curr_vm.registers[src_reg]))
+        print(f"push r{src_reg} to stack")
+        curr_vm.stack.append(curr_vm.registers[src_reg])
+        curr_vm.instruction_pointer += 1
     elif op == 6:  # pop
         #    *puVar2 = **(undefined8 **)(param_3 + 0x18);
         #*(long *)(param_3 + 0x18) = *(long *)(param_3 + 0x18) + -8;
-        print(f"pop from tape to r{dest_reg}")
+        print(f"pop r{dest_reg}")
         try:
-            curr_vm.registers[dest_reg] = struct.unpack("<Q", curr_vm.tape[-8:])[0]
-            curr_vm.tape = curr_vm.tape[:-8]
+            curr_vm.registers[dest_reg] = curr_vm.stack.pop()
         except:
-            print("Error popping from tape!")
+            print("Error popping from stack!")
+        curr_vm.instruction_pointer += 1
     elif op == 7:  # cmp
         #*(uint *)(param_3 + 0x10) = *(uint *)puVar2 - *(uint *)puVar3;
         print(f"cmp r{dest_reg} and r{src_reg}")
@@ -336,33 +342,37 @@ def execute_instruction(curr_ins, curr_vm):
         print(int.to_bytes(curr_vm.registers[dest_reg], 4, "big"))
         print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
         curr_vm.cmp = curr_vm.registers[dest_reg] - curr_vm.registers[src_reg]
+        curr_vm.instruction_pointer += 1
     elif op == 8:  # jz
         #    if (*(int *)(param_3 + 0x10) == 0) {
         #lseek(param_1,(long)(short)((ushort)(byte)param_2[3] + (ushort)(byte)param_2[2] * 0x100),1);
         print(f"jz to offset {immediate} if cmp is zero")
         if curr_vm.cmp == 0:
             offset = (src_reg << 8) + immediate
-            # Assuming `fd` is a global variable
-            file.seek(offset, 1)  # SEEK_CUR
+            curr_vm.instruction_pointer += offset
     elif op == 9:  # write
         #write(1,*(void **)(param_3 + 0x18),(ulong)(byte)param_2[3]);
-        print(f"write {immediate} bytes from tape")
+        print(f"write {immediate} bytes from stack")
         try:
-            sys.stdout.write("Writing : " + curr_vm.tape[:immediate].decode("utf-8") + "\n")
+            sys.stdout.write("Writing : " + curr_vm.stack[:immediate].decode("utf-8") + "\n")
         except:
             print("Error writing to stdout!")
-        curr_vm.tape = curr_vm.tape[immediate:]
+        curr_vm.stack = curr_vm.stack[immediate:]
+        curr_vm.instruction_pointer += 1
     elif op == 0xa:  # mul
         #    *(uint *)puVar2 = *(uint *)puVar2 * *(uint *)puVar3;
         #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3];
         print(f"mul r{dest_reg} by r{src_reg} with immediate {immediate}")
         curr_vm.registers[dest_reg] = (curr_vm.registers[dest_reg] * curr_vm.registers[src_reg]) + immediate
+        curr_vm.instruction_pointer += 1
     elif op == 0xb:  # addi
         #*(uint *)puVar2 = *(uint *)puVar2 + (uint)(byte)param_2[3];
         print(f"add immediate {immediate} to r{dest_reg}")
         curr_vm.registers[dest_reg] += immediate
+        curr_vm.instruction_pointer += 1
     elif op == 0xc:  # exit
         print("exit")
+        curr_vm.instruction_pointer += 1
     elif op == 0xd:  # getnum
         #__isoc99_scanf(&DAT_00102008,puVar2);
         print(f"getnum and store in r{dest_reg}")
@@ -370,19 +380,22 @@ def execute_instruction(curr_ins, curr_vm):
         decimal_values = [ord(char) for char in password]
         decimal_number = int(''.join(map(str, decimal_values)))
         curr_vm.registers[dest_reg] = decimal_number
+        curr_vm.instruction_pointer += 1
     elif op == 0xe:  # XOR
         #*(uint *)puVar2 = *(uint *)puVar2 ^ *(uint *)puVar3;
         print(f"xor r{src_reg} and r{dest_reg}")
         print(f"Value in r{src_reg}: {curr_vm.registers[src_reg]}")
-        print(f"Value in r{destsreg}: {curr_vm.registers[dest_reg]}")
+        print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] ^= curr_vm.registers[src_reg]
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 0xf:  # SHR (Shift Right)
         #*(uint *)puVar2 = *(uint *)puVar2 >> (param_2[3] & 0x1f);
         print(f"shr r{dest_reg} by {immediate & 0x1F} bits")
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] >>= (immediate & 0x1F)
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 0x10:  # Read from stdin
         #    uVar1 = getc(stdin);
         #*(uint *)puVar2 = uVar1;
@@ -392,18 +405,21 @@ def execute_instruction(curr_ins, curr_vm):
         decimal_number = int(''.join(map(str, decimal_values)))
         curr_vm.registers[dest_reg] = decimal_number
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 0x11:  # SHL (Shift Left)
         #*(uint *)puVar2 = *(uint *)puVar2 << (param_2[3] & 0x1f);
         print(f"shl r{dest_reg} by {immediate & 0x1F} bits")
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] <<= (immediate & 0x1F)
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 0x12:  # SUBI (Subtract Immediate)
         #*(uint *)puVar2 = *(uint *)puVar2 - (uint)(byte)param_2[3];
         print(f"subi {immediate} from r{dest_reg}")
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] -= (immediate & 0xFF)
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     elif op == 0x13:  # MOD (Modulus)
         #*(uint *)puVar2 = *(uint *)puVar2 % *(uint *)puVar3;
         print(f"mod r{src_reg} by r{dest_reg}")
@@ -411,13 +427,15 @@ def execute_instruction(curr_ins, curr_vm):
         print(f"Value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
         curr_vm.registers[dest_reg] %= curr_vm.registers[src_reg]
         print(f"Updated value in r{dest_reg}: {curr_vm.registers[dest_reg]}")
+        curr_vm.instruction_pointer += 1
     else:
         print("Error executing instruction!")
+    return curr_vm.instruction_pointer
 
 # Example usage
 if __name__ == "__main__":
     vm = VM()
-    with open("password_checker.smol", "rb") as file:
+    with open("C:\\Users\\nicol\\Desktop\\Black Box CTF\\vm1\\password_checker.smol", "rb") as file:
         while True:
             curr_ins = decode_instruction(file)
             if curr_ins is None:
@@ -425,7 +443,7 @@ if __name__ == "__main__":
             execute_instruction(curr_ins, vm)
 ```
 
-It has a lots of details but I think it helps a lot. One optimization would be to puts debug level to hide/show more information. Anyway, As the challenge asks use for some inputs, they are probably compared somewhere so let's just control+F to find this cmp instruction : 
+This is the first time i'm writing an emulator so it probably has some mistake. Anyway, it has a lots of details so that the output is clear. One optimization would be to make a difference between emulator/disassemble so that we can or follow the instruction flow or only get the fulled decompiled code. Anyway, As the challenge asks use for some inputs, they are probably compared somewhere so let's just control+F to find this cmp instruction : 
 
 ![Output](./Images/Reduced.png)
 
