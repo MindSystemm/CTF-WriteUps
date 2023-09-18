@@ -10,7 +10,7 @@ The repository provides a collection of pwn/RE challenges I solved during CTF co
 | Easy         | .net              | [Bypass (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Bypass%20(Hackthebox)/Bypass.md)  |
 | Easy         | Angr              | [Spooky Licence (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Easy/Spooky%20Licence%20(Hackthebox)/Writeup.md)  |
 | Medium | seccomp | [Curse Breaker (Hackthebox)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Medium/Curse%20Breaker/Writeup.MD) |
-| Medium | Game/GoDot | 
+| Medium | Game/GoDot | [ImpossibleBrawler! (CSAW CTF 2023)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Medium/ImpossibleBrawler!%20(CSAW%20CTF%202023)/WriteUp.MD)
 | Hard         | Android (native)  | [2FA (CSCBE2023)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/RE/Hard/2FA%20(CSCBE23)/2FA_solve.py)  |
 | Hard | VM | [Reduced Reduced Instruction set (PCTF23)](https://github.com/MindSystemm/CTF-WriteUps/blob/master/Challenges/PatriotCTF23/Writeups.md#reduced-reduced-instruction-set) |
 
