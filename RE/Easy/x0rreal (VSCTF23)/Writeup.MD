@@ -1,6 +1,6 @@
 This challenge was part of the vsCTF2023 and provides an elf file. By opening in it in Ghidra and looking at the main function, here's what we can see:
 
-![main](../Images/Decompiled.png)
+![main](./Images/Decompiled.png)
 
 The first thing I noticed is the called to ptrace(PTRACE_TRACEME,0,1,0); which is a known anti-debugging technique. This is however easily bypassed (patching instructions, hooking the function, ...). Then, a bit further, the flag checking routine is present. We first notice that the flag should be 53 char length. Then we see 2 calls to function and then a if. One can clearly assume that the 2 calls are used to encrypt the given input. So by going backward, we'll probably get the flag. The first method (which I called doublexor) is simply xoring the given char with 0x12. The second method is slightly more complex but is a recursive xor : 
 
