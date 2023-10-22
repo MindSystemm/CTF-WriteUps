@@ -405,3 +405,24 @@ for i in range(len(encrypted_byte)):
 print(decrypted_byte)
 ```
 
+# Traffic Analysis 
+
+## STARvin for Secrets 3: EZ Exfil
+
+### Description
+
+The attacker was able to exfiltrate several important pharmaceutical documents. Help the local network defenders for Aurora Pharmaceuticals determine which documents were actually exfiltrated.
+
+### Solution 
+
+We're given a pcap file. This is a capture of what's happening when you run the binary of part 1. So, to recover the flag, we have to retrieve the zip file and xor it with 38e655ef-8-5-2023 to obtain the flag. To get the icmp packets, my mate used tshark like this : 
+
+```bash
+tshark -r ./ezexfil.pcapng -Y "ip.dst == 192.168.1.1 && icmp" -T fields -e data.data > icmp.txt
+```
+
+Afterwards, we have to reconstruct the packets. The problem we faced is that hipercontracer is used. To deal with that, we can simply ignore them when reconstructing the flag : 
+
+```python
+##Incoming 
+```
